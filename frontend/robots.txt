@@ -1,0 +1,11 @@
+# Máy chủ tự thay https://ten-mien-cua-ban.vn bằng địa chỉ thật khi trả file này (app/main.py)
+User-agent: *
+Allow: /
+Disallow: /management.html
+Disallow: /kham-pha.html
+Disallow: /api/
+Disallow: /docs
+Disallow: /redoc
+Disallow: /openapi.json
+
+Sitemap: https://ten-mien-cua-ban.vn/sitemap.xml

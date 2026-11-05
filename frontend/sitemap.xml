@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Máy chủ tự thay https://ten-mien-cua-ban.vn bằng địa chỉ thật khi trả file này (app/main.py) -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://ten-mien-cua-ban.vn/</loc>
+    <lastmod>2026-11-03</lastmod>
+  </url>
+  <url>
+    <loc>https://ten-mien-cua-ban.vn/dich-vu.html</loc>
+    <lastmod>2026-11-03</lastmod>
+  </url>
+</urlset>

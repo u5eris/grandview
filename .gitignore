@@ -1,0 +1,26 @@
+# Môi trường ảo và file biên dịch Python
+.venv/
+venv/
+**/.venv/
+__pycache__/
+*.pyc
+
+# Cấu hình bí mật: không đưa lên GitHub
+.env
+
+# File hệ điều hành / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Database backups - khong dua len GitHub
+backups/
+*_backup.sql
+*.sql.backup
+*.dump
+*.bak
+# File khóa riêng: không đưa lên GitHub (chứng chỉ CA certs/ca.pem thì được phép)
+*.key
+.env.*
+!.env.example

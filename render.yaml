@@ -1,0 +1,27 @@
+# Cấu hình Render (Blueprint). Trên Render: New → Blueprint → chọn repo này.
+# Render chỉ hỏi một giá trị: DATABASE_URL = Service URI của MySQL trên Aiven.
+# Các giá trị còn lại đã điền sẵn; JWT_SECRET_KEY được Render tạo ngẫu nhiên.
+services:
+  - type: web
+    name: grandview-hotel
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # --proxy-headers: lấy đúng IP và https của khách sau proxy Render
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_NAME
+        value: hotel_management
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
+      - key: DB_TIME_ZONE
+        value: "+07:00"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_EXPIRE_MINUTES
+        value: "120"
