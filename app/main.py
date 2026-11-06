@@ -38,6 +38,7 @@ from app.room_status import (
     attach_live_status,
 )
 from app.staff_routes import ensure_staff_schema, log_staff_activity, router as staff_router
+from app.tourism_routes import router as tourism_router
 
 app = FastAPI(
     title="Hotel Management API",
@@ -2405,6 +2406,7 @@ def get_invoice(
 
 # Lịch phòng (Phần A) và quản lý tài khoản nhân viên (Phần C).
 app.include_router(staff_router)
+app.include_router(tourism_router)
 
 # Serve the existing HTML/CSS/JS on the same origin as the API.
 # API routes above are registered first, so /api/... is not swallowed by static serving.

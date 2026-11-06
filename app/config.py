@@ -65,3 +65,17 @@ JWT_ALGORITHM = "HS256"
 if not JWT_SECRET_KEY:
     # The app can still start for health checks, but login will fail closed.
     JWT_SECRET_KEY = ""
+
+
+# Bản đồ và định tuyến điểm tham quan (REST keys chỉ dùng tại backend).
+GOONG_API_KEY = os.getenv("GOONG_API_KEY", "").strip()
+TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY", "").strip()
+
+# Tọa độ tham chiếu của khu đất Grandview tại khu vực đường 3 Tháng 4, Đà Lạt.
+# Đây là điểm ghim tham chiếu, cần thay bằng tọa độ cổng vào khi nhóm chốt vị trí cụ thể.
+GRANDVIEW_HOTEL_LAT = float(os.getenv("GRANDVIEW_HOTEL_LAT", "11.925504"))
+GRANDVIEW_HOTEL_LNG = float(os.getenv("GRANDVIEW_HOTEL_LNG", "108.448336"))
+GRANDVIEW_HOTEL_LABEL = os.getenv(
+    "GRANDVIEW_HOTEL_LABEL",
+    "Grandview Hotel - khu vực đường 3 Tháng 4, Đà Lạt",
+).strip()

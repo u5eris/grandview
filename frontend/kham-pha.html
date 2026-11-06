@@ -12,6 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Great+Vibes&family=Newsreader:opsz,wght@6..72,400..500&display=swap" rel="stylesheet">
   <link rel="icon" href="grandview-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <style>
     /* Trang khám phá: cùng ngôn ngữ thiết kế với trang chủ, thêm bản đồ sơ đồ hóa. */
     .ex-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 1.1rem 0; }
@@ -77,6 +79,36 @@
     .pin-hotel .pin-dot { background: var(--pine); border-radius: 50%; transform: none; }
     .pin-hotel .pin-dot span { transform: none; }
     .map-note { margin-top: .5rem; font-size: .76rem; color: var(--stone); }
+    #leafletMap { width: 100%; height: clamp(390px, 58vw, 650px); background: #e8ece5; z-index: 1; }
+    #leafletMap.leaflet-container { font-family: "Be Vietnam Pro", system-ui, sans-serif; }
+    /* Zoom bằng Ctrl + lăn chuột; không chiếm thao tác cuộn trang thông thường. */
+    #leafletMap { cursor: grab; }
+    #leafletMap:active { cursor: grabbing; }
+    .route-status { min-height: 1.4em; }
+    .route-controls {
+      display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+      gap: .65rem 1rem; align-items: center; margin-top: .85rem; padding: .8rem 1rem;
+      border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--paper);
+    }
+    .route-mode { display: grid; gap: .25rem; font-size: .75rem; color: var(--stone); }
+    .route-mode select {
+      width: 100%; min-height: 40px; padding: .4rem .7rem; border: 1px solid var(--line);
+      border-radius: 9px; background: var(--paper); color: var(--pine); font: inherit; font-size: .85rem;
+    }
+    .route-status { margin: 0; font-size: .8rem; color: var(--stone); }
+    .route-summary {
+      grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .45rem 1rem;
+      padding-top: .65rem; border-top: 1px solid var(--line); font-size: .82rem; color: var(--pine);
+    }
+    .route-summary[hidden] { display: none; }
+    .route-summary strong { font-variant-numeric: tabular-nums; }
+    .route-button { cursor: pointer; }
+    .route-button:disabled { opacity: .6; cursor: wait; }
+    @media (max-width: 640px) {
+      #leafletMap { height: 440px; }
+      .route-controls { grid-template-columns: 1fr; }
+      .route-summary { grid-column: auto; }
+    }
     .map-legend { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; }
     .map-legend button {
       display: inline-flex; align-items: center; gap: .4rem;
@@ -323,38 +355,20 @@
       <div class="ex-layout">
         <section id="mapView" aria-labelledby="pageTitle">
           <div class="map-frame" id="mapFrame">
-            <svg viewBox="0 0 700 1200" role="img" aria-labelledby="mapTitleText">
-              <title id="mapTitleText">Sơ đồ vị trí các điểm đến quanh Đà Lạt</title>
-              <rect width="700" height="1200" fill="#F5F2EA"/>
-              <!-- vùng rừng thông -->
-              <g fill="#D3DCB4" opacity=".55">
-                <path d="M60 200l14-30 14 30z M100 250l12-26 12 26z M48 320l13-28 13 28z M150 150l12-26 12 26z"/>
-                <path d="M600 260l14-30 14 30z M560 330l12-26 12 26z M640 420l13-28 13 28z M520 200l12-26 12 26z"/>
-                <path d="M90 900l14-30 14 30z M150 980l12-26 12 26z M60 1050l13-28 13 28z M200 1100l12-26 12 26z"/>
-                <path d="M590 980l14-30 14 30z M640 1080l12-26 12 26z M540 1120l13-28 13 28z"/>
-                <path d="M430 1060l14-30 14 30z M470 1140l12-26 12 26z"/>
-              </g>
-              <!-- vùng đô thị -->
-              <ellipse cx="330" cy="700" rx="190" ry="150" fill="#E7EAD9"/>
-              <ellipse cx="330" cy="700" rx="190" ry="150" fill="none" stroke="#DAD5C6" stroke-width="2" stroke-dasharray="8 8"/>
-              <!-- đường chính -->
-              <g stroke="#DAD5C6" stroke-width="7" fill="none" stroke-linecap="round">
-                <path d="M318 718 C 300 560, 330 320, 352 86"/>
-                <path d="M318 718 C 300 820, 270 960, 251 1032"/>
-                <path d="M318 718 C 420 740, 520 760, 606 770"/>
-                <path d="M318 718 C 360 800, 420 880, 470 1000"/>
-              </g>
-              <!-- hồ Xuân Hương -->
-              <path d="M268 700 q50 -44 104 -16 q34 18 16 44 q-20 28 -62 20 q-44 -8 -58 -48z" fill="#CFE0E4" stroke="#8FA9AE" stroke-width="2"/>
-              <!-- hồ Tuyền Lâm -->
-              <path d="M196 1012 q58 -40 104 -4 q36 28 4 58 q-44 40 -94 6 q-34 -24 -14 -60z" fill="#CFE0E4" stroke="#8FA9AE" stroke-width="2"/>
-              <!-- đỉnh Langbiang -->
-              <path d="M300 120 l52 -72 l52 72z" fill="#4F5F3A" opacity=".5"/>
-              <text x="36" y="1168" font-family="'Be Vietnam Pro',system-ui,sans-serif" font-size="20" fill="#6E6B5E">Đà Lạt</text>
-              <text x="664" y="1168" text-anchor="end" font-family="'Be Vietnam Pro',system-ui,sans-serif" font-size="18" fill="#6E6B5E">Bắc ↑</text>
-            </svg>
+            <div id="leafletMap" role="application" aria-label="Bản đồ các điểm tham quan Đà Lạt"></div>
           </div>
           <p class="map-note" id="mapNote"></p>
+          <div class="route-controls">
+            <label class="route-mode" for="travelMode">
+              <span data-route-label="mode"></span>
+              <select id="travelMode">
+                <option value="car">Ô tô</option>
+                <option value="motorcycle">Xe máy</option>
+              </select>
+            </label>
+            <p class="route-status" id="routeStatus" role="status" aria-live="polite"></p>
+            <div class="route-summary" id="routeSummary" hidden></div>
+          </div>
           <div class="map-legend" id="mapLegend"></div>
         </section>
 
@@ -381,7 +395,7 @@
   <script src="i18n.js?v=2"></script>
   <script>
   (() => {
-    // Khung tọa độ của sơ đồ. Vị trí trên sơ đồ là tương đối, không dùng để dẫn đường.
+    // Tọa độ hiển thị ban đầu cho các điểm tham quan; tuyến thực tế được Goong/TomTom xác định khi khách yêu cầu.
     const BOUNDS = { latMin: 11.86, latMax: 12.06, lngMin: 108.385, lngMax: 108.505 };
 
     const CATEGORIES = [
@@ -392,7 +406,7 @@
       { id: "farm", vi: "Nông trại và đồi chè", en: "Farms" },
     ];
 
-    const HOTEL = { lat: 11.9220, lng: 108.4330 };
+    const HOTEL = { lat: 11.925504, lng: 108.448336 };
 
     const PLACES = [
       {
@@ -646,8 +660,8 @@
       map: { vi: "Bản đồ", en: "Map" },
       list: { vi: "Danh sách", en: "List" },
       mapNote: {
-        vi: "Sơ đồ vẽ tay, vị trí chỉ mang tính tương đối. Bấm Mở trong Google Maps để dẫn đường.",
-        en: "Hand-drawn diagram; positions are approximate. Use Open in Google Maps to navigate.",
+        vi: "Bản đồ © OpenStreetMap. Nhấp vào marker hoặc tên điểm tham quan để tự tính và vẽ đường từ Grandview Hotel. Giữ Ctrl rồi lăn chuột để phóng to/thu nhỏ.",
+        en: "Map © OpenStreetMap. Click an attraction marker or name to calculate and draw the route from Grandview Hotel. Hold Ctrl while scrolling to zoom.",
       },
       hotel: { vi: "Grandview Hotel", en: "Grandview Hotel" },
       pickPlace: { vi: "Chọn một điểm trên bản đồ để xem chi tiết.", en: "Pick a place on the map to see the details." },
@@ -656,7 +670,13 @@
       bestLabel: { vi: "Giờ đẹp", en: "Best time" },
       feeLabel: { vi: "Vé", en: "Entry" },
       distLabel: { vi: "Cách khách sạn", en: "From the hotel" },
-      maps: { vi: "Mở trong Google Maps", en: "Open in Google Maps" },
+      maps: { vi: "Chọn để xem tuyến đường", en: "Select to see route" },
+      routePending: { vi: "Chọn một điểm tham quan để xem đường đi từ khách sạn.", en: "Select an attraction to see the route from the hotel." },
+      routeError: { vi: "Không thể tính đường. Hãy kiểm tra cấu hình API hoặc thử lại.", en: "Could not calculate the route. Check API configuration or try again." },
+      routeMode: { vi: "Phương tiện di chuyển", en: "Travel mode" },
+      routeDistance: { vi: "Quãng đường", en: "Distance" },
+      routeDuration: { vi: "Thời gian dự kiến", en: "Estimated time" },
+      routeAddress: { vi: "Điểm đến", en: "Destination" },
       planTitle: { vi: "Gợi ý lịch trình", en: "Suggested itineraries" },
       showOnMap: { vi: "Xem trên bản đồ", en: "Show on map" },
       offMap: { vi: "Ngoài khung bản đồ", en: "Outside the map frame" },
@@ -965,7 +985,7 @@
         <p class="ex-foot-note">${esc(t("foot"))}</p>`;
     }
 
-    const state = { lang: "vi", view: "map", cat: "all", selected: null, day: 0 };
+    const state = { lang: "vi", view: "map", cat: "all", selected: null, day: 0, route: null, routing: false };
     const $ = selector => document.querySelector(selector);
     const esc = (value = "") => String(value).replace(/[&<>"']/g, c => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -997,56 +1017,317 @@
       return state.cat === "all" ? PLACES : PLACES.filter(place => place.cat === state.cat);
     }
 
-    function mapsLink(place) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.name.vi} Đà Lạt`)}`;
+    let leafletMap = null;
+    let placeMarkers = null;
+    let routeLayers = null;
+    let routeRenderer = null;
+    let hotelMarker = null;
+    let routeRequestSequence = 0;
+
+    function initLeafletMap() {
+      if (leafletMap) return;
+      if (!window.L) {
+        $("#routeStatus").textContent = t("routeError");
+        return;
+      }
+      // Tắt nút +/- và wheel-zoom mặc định. Chỉ zoom bằng Ctrl + lăn chuột,
+      // để thao tác cuộn trang bình thường không bị bản đồ chiếm mất.
+      leafletMap = L.map("leafletMap", {
+        zoomControl: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: true,
+      }).setView([HOTEL.lat, HOTEL.lng], 12);
+
+      leafletMap.createPane("gvRoutePane");
+      leafletMap.getPane("gvRoutePane").style.zIndex = "460";
+      // Dùng Canvas renderer riêng cho tuyến đường để tránh trường hợp SVG path
+      // không hiển thị do xung đột CSS hoặc cấu hình renderer mặc định.
+      routeRenderer = L.canvas({ pane: "gvRoutePane", padding: 0.5 });
+
+      const mapContainer = leafletMap.getContainer();
+      mapContainer.addEventListener("wheel", event => {
+        if (!event.ctrlKey || !event.deltaY) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const nextZoom = leafletMap.getZoom() + (event.deltaY < 0 ? 1 : -1);
+        const boundedZoom = Math.max(leafletMap.getMinZoom(), Math.min(leafletMap.getMaxZoom(), nextZoom));
+        leafletMap.setZoomAround(
+          leafletMap.mouseEventToContainerPoint(event),
+          boundedZoom,
+          { animate: true }
+        );
+      }, { passive: false });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>',
+      }).addTo(leafletMap);
+      placeMarkers = L.layerGroup().addTo(leafletMap);
+      routeLayers = L.layerGroup().addTo(leafletMap);
+      hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], {
+        title: "Grandview Hotel",
+        icon: L.divIcon({
+          className: "gv-map-marker",
+          html: '<span style="display:grid;place-items:center;width:34px;height:34px;border:3px solid #fff;border-radius:50%;background:#294d3d;color:#fff;font-weight:700;box-shadow:0 2px 8px #0005;">G</span>',
+          iconSize: [34, 34], iconAnchor: [17, 17],
+        }),
+      }).addTo(leafletMap).bindPopup(`<strong>${esc(t("hotel"))}</strong>`);
+      setTimeout(() => leafletMap && leafletMap.invalidateSize(), 150);
     }
 
-    // Vùng trung tâm nhiều điểm sát nhau, lệch nhẹ vài ghim cho dễ bấm.
-    const NUDGE = {
-      "cho-da-lat": [-4, -2.2],
-      "nha-tho-con-ga": [-1, 1.6],
-      "quang-truong-lam-vien": [3.5, 1.4],
-      "vuon-hoa-thanh-pho": [1, -2.4],
-      "crazy-house": [-2.5, 2.4],
-      "dinh-bao-dai": [-4, 0.8],
-    };
-
-    function position(lat, lng, id) {
-      const offset = NUDGE[id] || [0, 0];
-      const x = (lng - BOUNDS.lngMin) / (BOUNDS.lngMax - BOUNDS.lngMin) * 100 + offset[0];
-      const y = (BOUNDS.latMax - lat) / (BOUNDS.latMax - BOUNDS.latMin) * 100 + offset[1];
-      return { x: Math.min(97, Math.max(3, x)), y: Math.min(96, Math.max(3, y)) };
+    function clearRoute() {
+      // Làm mất hiệu lực request cũ để phản hồi đến trễ không ghi đè tuyến mới.
+      routeRequestSequence += 1;
+      state.route = null;
+      state.routing = false;
+      if (routeLayers) routeLayers.clearLayers();
+      $("#routeSummary").hidden = true;
+      $("#routeSummary").innerHTML = "";
     }
 
     function renderPins() {
-      const frame = $("#mapFrame");
-      frame.querySelectorAll(".pin").forEach(pin => pin.remove());
-      const hotel = position(HOTEL.lat, HOTEL.lng);
-      const hotelPin = document.createElement("div");
-      hotelPin.className = "pin pin-hotel";
-      hotelPin.style.left = `${hotel.x}%`;
-      hotelPin.style.top = `${hotel.y}%`;
-      hotelPin.innerHTML = `<span class="pin-dot"><span>G</span></span><span class="pin-label">${esc(t("hotel"))}</span>`;
-      frame.append(hotelPin);
+      initLeafletMap();
+      if (!leafletMap || !placeMarkers) return;
+      placeMarkers.clearLayers();
 
-      visiblePlaces().filter(place => !place.offMap).forEach((place, index) => {
-        const spot = position(place.lat, place.lng, place.id);
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "pin";
-        button.dataset.place = place.id;
-        button.style.left = `${spot.x}%`;
-        button.style.top = `${spot.y}%`;
-        button.setAttribute("aria-pressed", String(state.selected === place.id));
-        button.innerHTML = `<span class="pin-dot"><span>${index + 1}</span></span>
-          <span class="pin-label">${esc(place.name[state.lang])}</span>`;
-        frame.append(button);
+      hotelMarker.setLatLng([HOTEL.lat, HOTEL.lng]);
+      hotelMarker.setPopupContent(`<strong>${esc(t("hotel"))}</strong>`);
+
+      const places = visiblePlaces();
+      const bounds = L.latLngBounds([[HOTEL.lat, HOTEL.lng]]);
+      places.forEach((place, index) => {
+        const isSelected = state.selected === place.id;
+        const marker = L.marker([place.lat, place.lng], {
+          title: place.name[state.lang],
+          icon: L.divIcon({
+            className: "gv-map-marker",
+            html: `<span style="display:grid;place-items:center;width:27px;height:27px;border:2px solid #fff;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:${isSelected ? "#c39a4a" : "#477b62"};color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 6px #0005;">${index + 1}</span>`,
+            iconSize: [27, 27], iconAnchor: [13, 25],
+          }),
+        }).addTo(placeMarkers);
+        marker.bindPopup(`<strong>${esc(place.name[state.lang])}</strong>`);
+        marker.on("click", () => {
+          // Chọn marker đồng thời tự gọi Goong + TomTom và vẽ tuyến.
+          calculateRoute(place.id);
+        });
+        bounds.extend([place.lat, place.lng]);
       });
 
-      $("#mapLegend").innerHTML = visiblePlaces().filter(place => !place.offMap).map((place, index) =>
+      $("#mapLegend").innerHTML = places.map((place, index) =>
         `<button type="button" data-place="${place.id}" aria-pressed="${state.selected === place.id}">
            <b>${index + 1}</b>${esc(place.name[state.lang])}
          </button>`).join("");
+
+      if (state.selected) {
+        const selected = placeById(state.selected);
+        if (selected) leafletMap.panTo([selected.lat, selected.lng]);
+      } else if (!leafletMap._gvInitialBoundsSet) {
+        leafletMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 });
+        leafletMap._gvInitialBoundsSet = true;
+      }
+      setTimeout(() => leafletMap && leafletMap.invalidateSize(), 100);
+
+      if (state.route) drawRoute(state.route);
+    }
+
+    function drawRoute(route) {
+      if (!leafletMap || !routeLayers || !route || !Array.isArray(route.points)) return false;
+      routeLayers.clearLayers();
+
+      const coords = route.points
+        .filter(point => Array.isArray(point) && point.length >= 2)
+        .map(point => [Number(point[0]), Number(point[1])])
+        .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng)
+          && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180);
+
+      if (coords.length < 2) {
+        throw new Error(state.lang === "vi"
+          ? "TomTom có phản hồi nhưng dữ liệu hình học tuyến không hợp lệ (cần ít nhất 2 tọa độ lat/lng)."
+          : "TomTom responded, but the route geometry is invalid (at least 2 lat/lng points are required).");
+      }
+
+      // Vẽ một viền sáng bên dưới để tuyến luôn nổi rõ trên nền bản đồ.
+      L.polyline(coords, {
+        pane: "gvRoutePane", renderer: routeRenderer,
+        color: "#ffffff", weight: 12, opacity: 0.96,
+        lineCap: "round", lineJoin: "round", interactive: false,
+      }).addTo(routeLayers);
+
+      const line = L.polyline(coords, {
+        pane: "gvRoutePane", renderer: routeRenderer,
+        color: "#087f50", weight: 7, opacity: 1,
+        lineCap: "round", lineJoin: "round", interactive: false,
+      }).addTo(routeLayers);
+
+      (route.traffic_sections || []).forEach(section => {
+        const startIndex = Number(section.startPointIndex);
+        const endIndex = Number(section.endPointIndex);
+        if (!Number.isInteger(startIndex) || !Number.isInteger(endIndex)
+            || startIndex < 0 || endIndex <= startIndex || endIndex >= coords.length) return;
+        const segment = coords.slice(startIndex, endIndex + 1);
+        if (segment.length < 2) return;
+        let color = null;
+        if (section.simpleCategory === "JAM") color = "#d9534f";
+        else if (section.simpleCategory === "SLOW") color = "#d49a36";
+        if (color) {
+          L.polyline(segment, {
+            pane: "gvRoutePane", renderer: routeRenderer,
+            color, weight: 9, opacity: 1,
+            lineCap: "round", lineJoin: "round", interactive: false,
+          }).addTo(routeLayers);
+        }
+      });
+
+      // Hotel marker và marker POI đã có trong placeMarkers. Không tạo marker đích
+      // thứ hai ở tọa độ khác; POI sẽ được đồng bộ với tọa độ Goong trong calculateRoute.
+      const bounds = line.getBounds();
+      if (!bounds.isValid()) {
+        throw new Error(state.lang === "vi" ? "Không xác định được khung tuyến đường." : "Unable to determine route bounds.");
+      }
+
+      // Đợi layout hiển thị bản đồ hoàn tất rồi mới fitBounds, đặc biệt khi chuyển từ List sang Map.
+      requestAnimationFrame(() => {
+        if (!leafletMap) return;
+        leafletMap.invalidateSize({ pan: false });
+        leafletMap.fitBounds(bounds, { padding: [42, 42], maxZoom: 15, animate: true });
+      });
+      return true;
+    }
+
+    function renderRoutePanel() {
+      const status = $("#routeStatus");
+      const summary = $("#routeSummary");
+      const mode = $("#travelMode");
+      const modeValue = mode.value;
+      const modeLabel = document.querySelector('[data-route-label="mode"]');
+      if (modeLabel) modeLabel.textContent = t("routeMode");
+      mode.options[0].textContent = state.lang === "vi" ? "Ô tô" : "Car";
+      mode.options[1].textContent = state.lang === "vi" ? "Xe máy" : "Motorcycle";
+
+      if (state.routing) {
+        // Khách không cần thấy thông báo kỹ thuật trong lúc backend gọi Goong/TomTom.
+        status.textContent = "";
+        status.hidden = true;
+        summary.hidden = true;
+        summary.innerHTML = "";
+        return;
+      }
+      if (state.route) {
+        const route = state.route;
+        status.hidden = false;
+        status.textContent = `${t("routeAddress")}: ${route.destination.formatted_address}`;
+        // Chỉ hiển thị quãng đường và thời gian dự kiến; ẩn thời gian trễ giao thông.
+        summary.innerHTML = `
+          <span>${esc(t("routeDistance"))}: <strong>${Number(route.distance_km).toFixed(2)} km</strong></span>
+          <span>${esc(t("routeDuration"))}: <strong>${Number(route.duration_minutes).toFixed(0)} phút</strong></span>`;
+        summary.hidden = false;
+      } else {
+        status.hidden = false;
+        status.textContent = t("routePending");
+        summary.hidden = true;
+        summary.innerHTML = "";
+      }
+    }
+
+    async function calculateRoute(placeId) {
+      const place = placeById(placeId);
+      if (!place) return;
+
+      // Không gọi lại API nếu tuyến hiện tại đã đúng điểm và phương tiện.
+      const selectedMode = $("#travelMode").value;
+      if (state.route && state.route.place_id === placeId && state.route.travel_mode === selectedMode) {
+        state.selected = placeId;
+        state.view = "map";
+        renderChrome();
+        renderDetail();
+        drawRoute(state.route);
+        renderRoutePanel();
+        return;
+      }
+      if (state.routing && state.selected === placeId && state._routingMode === selectedMode) return;
+
+      const requestId = ++routeRequestSequence;
+      state.route = null;
+      if (routeLayers) routeLayers.clearLayers();
+      $("#routeSummary").hidden = true;
+      $("#routeSummary").innerHTML = "";
+      state.selected = placeId;
+      state.view = "map";
+      state.routing = true;
+      state._routingMode = selectedMode;
+      renderChrome();
+      renderDetail();
+      renderPins();
+      renderRoutePanel();
+
+      try {
+        const response = await fetch("/api/tourism/directions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            destination_name: place.name.vi,
+            travel_mode: selectedMode,
+            // Dùng vị trí marker để Goong chọn đúng kết quả gần điểm đang được đề xuất.
+            reference_lat: Number(place.lat),
+            reference_lng: Number(place.lng),
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (requestId !== routeRequestSequence) return;
+        if (!response.ok) throw new Error(data.detail || t("routeError"));
+
+        if (!Array.isArray(data.points) || data.points.length < 2) {
+          throw new Error(state.lang === "vi"
+            ? "TomTom không trả về đủ tọa độ để vẽ tuyến đường."
+            : "TomTom did not return enough route coordinates to draw the route.");
+        }
+        const resolvedLat = Number(data.destination?.lat);
+        const resolvedLng = Number(data.destination?.lng);
+        if (!Number.isFinite(resolvedLat) || !Number.isFinite(resolvedLng)
+            || resolvedLat < -90 || resolvedLat > 90 || resolvedLng < -180 || resolvedLng > 180) {
+          throw new Error(state.lang === "vi"
+            ? "Tọa độ đích do Goong trả về không hợp lệ."
+            : "Goong returned invalid destination coordinates.");
+        }
+
+        // Tọa độ Goong được chọn gần marker đề xuất nhất trở thành tọa độ chuẩn
+        // của POI trong phiên hiện tại: marker, popup và endpoint của tuyến trùng nhau.
+        place.lat = resolvedLat;
+        place.lng = resolvedLng;
+        state.route = { ...data, place_id: placeId };
+        state.routing = false;
+        renderRoutePanel();
+        renderDetail();
+        renderPins(); // vẽ lại marker tại đúng tọa độ API và gọi drawRoute bên trong.
+      } catch (error) {
+        if (requestId !== routeRequestSequence) return;
+        state.routing = false;
+        state.route = null;
+        if (routeLayers) routeLayers.clearLayers();
+        $("#routeStatus").hidden = false;
+        $("#routeStatus").textContent = error.message || t("routeError");
+        $("#routeSummary").hidden = true;
+        renderDetail();
+      }
+    }
+
+    async function loadHotelLocation() {
+      try {
+        const response = await fetch("/api/tourism/hotel-location");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (Number.isFinite(Number(data.lat)) && Number.isFinite(Number(data.lng))) {
+          HOTEL.lat = Number(data.lat);
+          HOTEL.lng = Number(data.lng);
+          if (leafletMap) {
+            hotelMarker.setLatLng([HOTEL.lat, HOTEL.lng]);
+            leafletMap._gvInitialBoundsSet = false;
+          }
+          renderPins();
+        }
+      } catch (error) {
+        console.warn("Không tải được vị trí khách sạn từ API.", error);
+      }
     }
 
     function renderList() {
@@ -1061,8 +1342,7 @@
           <p>${esc(place.desc[state.lang].split(". ")[0].replace(/\.$/, ""))}.</p>
           <span class="place-meta">
             <span class="tag">${esc(place.time[state.lang])}</span>
-            <span class="tag">${place.km} km</span>
-            ${place.offMap ? `<span class="tag">${esc(t("offMap"))}</span>` : ""}
+            <span class="tag">${esc(t("maps"))}</span>
           </span>
         </button>`).join("");
     }
@@ -1073,6 +1353,13 @@
         $("#detail").innerHTML = `<p class="detail-empty">${esc(state.view === "map" ? t("pickPlace") : t("pickPlaceList"))}</p>`;
         return;
       }
+      const hasRoute = state.route && state.route.place_id === place.id;
+      const distanceText = hasRoute ? `${Number(state.route.distance_km).toFixed(2)} km` : t("routePending");
+      const routeStateText = state.routing
+        ? ""
+        : hasRoute
+          ? (state.lang === "vi" ? "Đường đi đã được hiển thị trên bản đồ." : "The route is displayed on the map.")
+          : t("routePending");
       $("#detail").innerHTML = `
         <h2>${esc(place.name[state.lang])}</h2>
         <p>${esc(place.desc[state.lang])}</p>
@@ -1080,12 +1367,10 @@
           <dt>${esc(t("timeLabel"))}</dt><dd>${esc(place.time[state.lang])}</dd>
           <dt>${esc(t("bestLabel"))}</dt><dd>${esc(place.best[state.lang])}</dd>
           <dt>${esc(t("feeLabel"))}</dt><dd>${esc(place.fee[state.lang])}</dd>
-          <dt>${esc(t("distLabel"))}</dt><dd>${place.km} km</dd>
+          <dt>${esc(t("distLabel"))}</dt><dd>${esc(distanceText)}</dd>
         </dl>
         <p class="detail-tip">${esc(place.tip[state.lang])}</p>
-        <div class="detail-actions">
-          <a class="secondary-button" href="${mapsLink(place)}" target="_blank" rel="noopener">${esc(t("maps"))}</a>
-        </div>`;
+        ${routeStateText ? `<p class="route-status" role="status" aria-live="polite">${esc(routeStateText)}</p>` : ""}`;
     }
 
     function renderPlan() {
@@ -1140,8 +1425,8 @@
     }
 
     function select(id) {
-      state.selected = state.selected === id ? null : id;
-      render();
+      // Chọn điểm ở danh sách/chú giải cũng tự tính tuyến, không cần nút riêng.
+      calculateRoute(id);
     }
 
     document.addEventListener("click", event => {
@@ -1153,19 +1438,22 @@
       if (cat) {
         state.cat = cat.dataset.cat;
         const current = state.selected ? placeById(state.selected) : null;
-        if (current && state.cat !== "all" && current.cat !== state.cat) state.selected = null;
+        if (current && state.cat !== "all" && current.cat !== state.cat) {
+          clearRoute();
+          state.selected = null;
+        }
         render();
+        renderRoutePanel();
         return;
       }
       const planPlace = event.target.closest("[data-plan-place]");
       if (planPlace) {
         const place = placeById(planPlace.dataset.planPlace);
+        if (!place) return;
         state.cat = "all";
-        state.view = place.offMap ? "list" : "map";
-        state.selected = place.id;
-        render();
-        $("#mapView").hidden ? $("#listView").scrollIntoView({ behavior: "smooth", block: "start" })
-                             : $("#mapView").scrollIntoView({ behavior: "smooth", block: "start" });
+        state.view = "map";
+        calculateRoute(place.id);
+        $("#mapView").scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
       const pin = event.target.closest("[data-place]");
@@ -1173,6 +1461,10 @@
       const day = event.target.closest("[data-day]");
       if (day) { state.day = Number(day.dataset.day); renderPlan(); return; }
       if (event.target.closest("#weatherRetry")) loadWeather();
+    });
+
+    $("#travelMode").addEventListener("change", () => {
+      if (state.selected) calculateRoute(state.selected);
     });
 
     $("#weatherArea").addEventListener("change", event => {
@@ -1185,11 +1477,14 @@
     document.addEventListener("gv:langchange", event => {
       state.lang = event.detail.lang;
       render();
+      renderRoutePanel();
     });
 
     readUrl();
     window.GV_I18N.apply();
     render();
+    renderRoutePanel();
+    loadHotelLocation();
     loadWeather();
     // Trang để mở lâu (ví dụ ở sảnh) vẫn tự cập nhật mỗi giờ.
     setInterval(loadWeather, 60 * 60 * 1000);
