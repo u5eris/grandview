@@ -142,3 +142,8 @@ Xem hướng dẫn đầy đủ trong `HUONG_DAN_TRIEN_KHAI.md`. Tóm tắt:
 4. Trên Render: **New → Blueprint**, chọn repo, dán Service URI vào `DATABASE_URL`.
 
 Không cần sửa code: địa chỉ website trong trang chủ, `robots.txt` và `sitemap.xml` được máy chủ tự điền theo địa chỉ thật; `certs/ca.pem` được tự dùng khi database không nằm trên máy.
+
+
+## Bản đồ và chỉ đường tham quan
+
+Tính năng bản đồ dùng Goong Geocoding, TomTom Routing và Leaflet. Xem hướng dẫn cấu hình API key trong [`docs/goong-tomtom-leaflet.md`](docs/goong-tomtom-leaflet.md). API key phải được đặt trong `.env` ở backend, không đặt trong frontend.
